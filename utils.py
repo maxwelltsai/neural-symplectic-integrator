@@ -42,6 +42,57 @@ def custom_loss(dxdt, dxdt_hat, x):
 #     print(scaling_factor, torch.exp(scaling_factor))
     return scaling_factor * l2_loss + magnitude_dLdt * 100
 
+
+def tanh_log(x):
+  return torch.tanh(x) * torch.log(torch.tanh(x) * x + 1)
+
+  # threshold = 2.69364
+  # y0 = torch.tanh(x[torch.abs(x) <= threshold])
+  # y1 = torch.log(x[x > threshold])
+  # y2 = -torch.log(-x[x < -threshold])
+  # print(y2.shape, y1.shape, y0.shape, torch.abs(x).shape)
+  # y = torch.cat((y2, y0, y1), 0)
+  # print(x.shape, y.shape, y2.shape, y1.shape, y0.shape)
+  # y[x >= threshold] = torch.log(x[x >= threshold])
+  # y[x <= -threshold] = -torch.log(-x[x <= -threshold])
+    
+  return y
+
+class TanhLog(torch.nn.Module):
+  '''
+  Applies the Sigmoid Linear Unit (SiLU) function element-wise:
+      SiLU(x) = x * sigmoid(x)
+  Shape:
+      - Input: (N, *) where * means, any number of additional
+        dimensions
+      - Output: (N, *), same shape as the input
+  References:
+      -  Related paper:
+      https://arxiv.org/pdf/1606.08415.pdf
+  Examples:
+      >>> m = silu()
+      >>> input = torch.randn(2)
+      >>> output = m(input)
+  '''
+  def __init__(self):
+    '''
+    Init method.
+    '''
+    super().__init__() # init the base class
+
+  def forward(self, x):
+      '''
+      Forward pass of the function.
+      '''
+      threshold = 2.69364
+      y0 = torch.tanh(x[torch.abs(x) <= threshold])
+      y1 = torch.log(x[x > threshold])
+      y2 = -torch.log(-x[x < -threshold])
+      print(y2.shape, y1.shape, y0.shape, torch.abs(x).shape)
+      y = torch.cat((y2, y0, y1), 0)
+      print(x.shape, y.shape, y2.shape, y1.shape, y0.shape)
+      return y # simply apply already implemented SiLU
+
 def read_lipson(experiment_name, save_dir):
   desired_file = experiment_name + ".txt"
   with zipfile.ZipFile('{}/invar_datasets.zip'.format(save_dir)) as z:
@@ -92,6 +143,8 @@ def choose_nonlinearity(name):
     nl = lambda x: x * torch.sigmoid(x)
   elif name == 'lrelu':
     nl = torch.nn.LeakyReLU(0.1)
+  elif name == 'tanh_log':
+    nl = tanh_log
   else:
     raise ValueError("nonlinearity not recognized")
   return nl

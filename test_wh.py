@@ -19,7 +19,7 @@ def get_args():
          'learn_rate': 1e-4,
          'input_noise': 0.,
          'batch_size': 200,
-         'nonlinearity': 'tanh',
+         'nonlinearity': 'tanh_log',
          'total_steps': 10000,
          'field_type': 'solenoidal',
          'print_every': 200,
@@ -51,28 +51,29 @@ print(args.field_type, args.input_dim)
 hnn_model = load_model(args, baseline=False).cuda()
 
 # initial conditions
-semi = 0.5
+semi = 5.20
 a0 = semi
 # a1 = semi + np.random.rand() + 1
 # a1 = semi * 1 + 5 * np.random.rand() + 1
-a1 = 0.7
-t_end = 500
+a1 = 9.5826
+t_end = 1000
 h = 0.2
 
 wh_nih = WisdomHolman(hnn=hnn_model)
 wh_nih.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
+wh_nih.particles.add(mass=1.e-5, a=1, name='Sun2')
 
-for i in range(100):
-    wh_nih.particles.add(mass=1.e-8, a=np.random.rand() + 0.5, e=0.05*np.random.rand(), i=0, name='planet%d' % i, primary='Sun',f=2*np.pi*np.random.rand())
+# for i in range(10):
+    # wh_nih.particles.add(mass=1.e-6, a=np.random.rand() * 10 + 0.5, e=0.05*np.random.rand(), i=0, name='planet%d' % i, primary='Sun',f=2*np.pi*np.random.rand())
 
 
-# wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-# wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=0, name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-# wh_nih.particles.add(mass=1.e-6, a=a1, e=0.1*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+# wh_nih.particles.add(mass=0.0009543, a=a0, e=0.05*np.random.rand(), i=0, name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+# wh_nih.particles.add(mass=0.0002857, a=a1, e=0.1*np.random.rand(), i=np.pi/30, name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05, i=np.pi/30, name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=1.e-4, a=a1, e=0.03, name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=1.e-4, a=2*a1, e=0.03, name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
-wh_nih.output_file = 'data.h5'
+wh_nih.output_file = 'data_nih.h5'
 wh_nih.store_dt = 10
 
 
@@ -97,6 +98,7 @@ wh_nih.stop()
 
 # create a traditional WH integrator as the ground truth generator
 wh_nb = WisdomHolman(particles=particles_init)
+wh_nb.output_file = 'data_nb.h5'
 wh_nb.integrator_warmup()
 wh_nb.h = h
 wh_nb.acceleration_method = 'numpy'

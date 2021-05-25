@@ -583,7 +583,10 @@ class WisdomHolman(Integrator):
 
 if __name__ == '__main__':
 
-    N_exp = 20
+    m1 = np.linspace(1.e-2, 1.e-8, 1000)
+    a1 = np.linspace(0.3, 100, 1000)
+    # a1 = [0.4, 0.7, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 400, 800]
+    N_exp = 50
 
     coords = None
     dcoords = None
@@ -592,21 +595,26 @@ if __name__ == '__main__':
         wh = WisdomHolman()
         a0 = semi
     #     a1 = semi + np.random.rand() + 1
-        a1 = semi + 0.2 + 0.5 * np.random.rand()
+        # a1 = semi + 0.2 + 0.5 * np.random.rand()
         wh.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
-        wh.particles.add(mass=1.e-4*np.random.rand(), a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+        
+        # wh.particles.add(mass=1.e-4*np.random.rand(), a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
         # wh.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
         # wh.particles.add(mass=1.e-5, a=a1, e=0.1*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
         print(wh.particles)
         wh.h = 0.05
         wh.acceleration_method = 'numpy'
-        wh.integrate(2000)
+        wh.integrate(500)
         if coords is None and dcoords is None:
-            coords = np.array(wh.coord)
-            dcoords = np.array(wh.dcoord)
+            if np.isnan(wh.coord).sum() == 0 and np.isnan(wh.dcoord).sum() == 0:
+                coords = np.array(wh.coord)
+                dcoords = np.array(wh.dcoord)
         else:
-            coords = np.append(coords, np.array(wh.coord), axis=0)
-            dcoords = np.append(dcoords, np.array(wh.dcoord), axis=0)
+            if np.isnan(wh.coord).sum() == 0 and np.isnan(wh.dcoord).sum() == 0:
+                coords = np.append(coords, np.array(wh.coord), axis=0)
+                dcoords = np.append(dcoords, np.array(wh.dcoord), axis=0)
 
     a_init = 1
     test_coords = None
@@ -623,7 +631,7 @@ if __name__ == '__main__':
         print(wh.particles)
         wh.h = 0.05
         wh.acceleration_method = 'numpy'
-        wh.integrate(500)
+        wh.integrate(200)
         if test_coords is None and test_dcoords is None:
             test_coords = np.array(wh.coord)
             test_dcoords = np.array(wh.dcoord)
