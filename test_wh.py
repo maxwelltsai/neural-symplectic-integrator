@@ -6,6 +6,8 @@ from wh import WisdomHolman
 import numpy as np
 import copy
 import matplotlib.pyplot as plt
+from config import CONFIG
+from utils import get_model_path, get_backbone
 
 
 DPI = 300
@@ -13,42 +15,25 @@ FORMAT = 'pdf'
 EXPERIMENT_DIR = '.'
 sys.path.append(EXPERIMENT_DIR)
 
-def get_args():
-    return {'input_dim': 6, # two bodies, each with q_x, q_y, p_z, p_y
-         'hidden_dim': 512,
-         'learn_rate': 1e-4,
-         'input_noise': 0.,
-         'batch_size': 200,
-         'nonlinearity': 'tanh_log',
-         'total_steps': 10000,
-         'field_type': 'solenoidal',
-         'print_every': 200,
-         'verbose': True,
-         'name': 'wh',
-         'seed': 3,
-         'save_dir': '{}'.format(EXPERIMENT_DIR),
-         'fig_dir': './figures'}
 
-class ObjectView(object):
-    def __init__(self, d): self.__dict__ = d
-
-def load_model(args, baseline=False):
-    output_dim = args.input_dim if baseline else 2
-    nn_model = MLP(args.input_dim, args.hidden_dim, output_dim, args.nonlinearity)
+def load_model(config, device):
+    output_dim = 1
+    # nn_model = MLP(config['input_dim'], config['hidden_dim'], config['output_dim'], config['activation'])
+    nn_model = get_backbone(config['backbone'])
     print(nn_model)
-    model = HNN(args.input_dim, differentiable_model=nn_model,
-            field_type=args.field_type, baseline=baseline)
+    model = HNN(config['input_dim'], differentiable_model=nn_model, device=device)
 
-    case = 'baseline' if baseline else 'hnn'
-    path = "{}/{}-orbits-{}.tar".format(args.save_dir, args.name, case)
+    path = get_model_path()
     print(path)
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(path, map_location=torch.device(device)))
     return model
 
-args = ObjectView(get_args())
-print(args.field_type, args.input_dim)
-# base_model = load_model(args, baseline=True).cuda()
-hnn_model = load_model(args, baseline=False).cuda()
+config = CONFIG
+if torch.cuda.is_available():
+  device = 'cuda'
+else:
+  device = 'cpu'
+hnn_model = load_model(config, device)
 
 # initial conditions
 semi = 5.20
@@ -56,18 +41,18 @@ a0 = semi
 # a1 = semi + np.random.rand() + 1
 # a1 = semi * 1 + 5 * np.random.rand() + 1
 a1 = 9.5826
-t_end = 1000
-h = 0.2
+t_end = 100
+h = 0.05
 
 wh_nih = WisdomHolman(hnn=hnn_model)
 wh_nih.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
-wh_nih.particles.add(mass=1.e-5, a=1, name='Sun2')
+# wh_nih.particles.add(mass=1.e-5, a=1, name='Sun2')
 
-# for i in range(10):
-    # wh_nih.particles.add(mass=1.e-6, a=np.random.rand() * 10 + 0.5, e=0.05*np.random.rand(), i=0, name='planet%d' % i, primary='Sun',f=2*np.pi*np.random.rand())
+for i in range(10):
+    wh_nih.particles.add(mass=np.random.uniform(1.e-6, 1.e-8), a=np.random.uniform(1, 10), e=0.2*np.random.rand(), i=0, name='planet%d' % i, primary='Sun',f=2*np.pi*np.random.rand())
 
 
-wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+# wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=0.0009543, a=a0, e=0.05*np.random.rand(), i=0, name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=0.0002857, a=a1, e=0.1*np.random.rand(), i=np.pi/30, name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
 # wh_nih.particles.add(mass=1.e-4, a=a0, e=0.05, i=np.pi/30, name='planet1', primary='Sun',f=2*np.pi*np.random.rand())

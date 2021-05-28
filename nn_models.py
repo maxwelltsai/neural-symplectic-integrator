@@ -3,13 +3,35 @@
 
 import torch
 import numpy as np
-from utils import choose_nonlinearity
-import os.path
-
+from utils import choose_activation
+import os 
 import scipy.sparse as sparse
 
-class MLP_dropout(torch.nn.Module):
+
+class MLP(torch.nn.Module):
   '''Just a salt-of-the-earth MLP'''
+  def __init__(self, input_dim, hidden_dim, output_dim, nonlinearity='tanh'):
+    super(MLP, self).__init__()
+    self.linear1 = torch.nn.Linear(input_dim, hidden_dim)
+    self.linear2 = torch.nn.Linear(hidden_dim, hidden_dim)
+    self.linear3 = torch.nn.Linear(hidden_dim, hidden_dim)
+    self.linear4 = torch.nn.Linear(hidden_dim, hidden_dim)
+    self.linear5 = torch.nn.Linear(hidden_dim, output_dim, bias=None)
+
+    for l in [self.linear1, self.linear2, self.linear3, self.linear4, self.linear5]:
+      torch.nn.init.orthogonal_(l.weight) # use a principled initialization
+
+    self.nonlinearity = choose_activation(nonlinearity)
+
+  def forward(self, x, separate_fields=False):
+    h = self.nonlinearity( self.linear1(x) )
+    h = self.nonlinearity( self.linear2(h) )
+    h = self.nonlinearity( self.linear3(h) )
+    h = self.nonlinearity( self.linear4(h) )
+    return self.linear5(h)
+
+class MLP_dropout(torch.nn.Module):
+  '''MLP with a dropout layer.'''
   def __init__(self, input_dim, hidden_dim, output_dim, nonlinearity='tanh'):
     super(MLP, self).__init__()
     self.linear1 = torch.nn.Linear(input_dim, hidden_dim)
@@ -22,7 +44,7 @@ class MLP_dropout(torch.nn.Module):
     for l in [self.linear1, self.linear2, self.linear3, self.linear4, self.linear5]:
       torch.nn.init.orthogonal_(l.weight) # use a principled initialization
 
-    self.nonlinearity = choose_nonlinearity(nonlinearity)
+    self.nonlinearity = choose_activation(nonlinearity)
       
   def forward(self, x, separate_fields=False):
     h = self.nonlinearity( self.linear1(x) )
@@ -32,10 +54,10 @@ class MLP_dropout(torch.nn.Module):
     h = self.Dropout1d(h)
     return self.linear5(h)
 
-class MLP(torch.nn.Module):
-  '''Just a salt-of-the-earth MLP'''
+class SparseMLP(torch.nn.Module):
+  '''Sparse MLP'''
   def __init__(self, input_dim, hidden_dim, output_dim, nonlinearity='tanh'):
-    super(MLP, self).__init__()
+    super(SparseMLP, self).__init__()
     self.linear1 = torch.nn.Linear(input_dim, hidden_dim)
     self.linear2 = torch.nn.Linear(hidden_dim, hidden_dim)
     self.linear3 = torch.nn.Linear(hidden_dim, hidden_dim)
@@ -56,7 +78,7 @@ class MLP(torch.nn.Module):
       self.linear3.weight.mul_(mask)
       self.linear4.weight.mul_(mask)
 
-    self.nonlinearity = choose_nonlinearity(nonlinearity)
+    self.nonlinearity = choose_activation(nonlinearity)
 
   def forward(self, x, separate_fields=False):
     h = self.nonlinearity( self.linear1(x) )
@@ -65,27 +87,6 @@ class MLP(torch.nn.Module):
     h = self.nonlinearity( self.linear4(h) )
     return self.linear8(h)
 
-class MLP_vanilla(torch.nn.Module):
-  '''Just a salt-of-the-earth MLP'''
-  def __init__(self, input_dim, hidden_dim, output_dim, nonlinearity='tanh'):
-    super(MLP, self).__init__()
-    self.linear1 = torch.nn.Linear(input_dim, hidden_dim)
-    self.linear2 = torch.nn.Linear(hidden_dim, hidden_dim)
-    self.linear3 = torch.nn.Linear(hidden_dim, hidden_dim)
-    self.linear4 = torch.nn.Linear(hidden_dim, hidden_dim)
-    self.linear5 = torch.nn.Linear(hidden_dim, output_dim, bias=None)
-
-    for l in [self.linear1, self.linear2, self.linear3, self.linear4, self.linear5]:
-      torch.nn.init.orthogonal_(l.weight) # use a principled initialization
-
-    self.nonlinearity = choose_nonlinearity(nonlinearity)
-
-  def forward(self, x, separate_fields=False):
-    h = self.nonlinearity( self.linear1(x) )
-    h = self.nonlinearity( self.linear2(h) )
-    h = self.nonlinearity( self.linear3(h) )
-    h = self.nonlinearity( self.linear4(h) )
-    return self.linear5(h)
 
 class MLPAutoencoder(torch.nn.Module):
   '''A salt-of-the-earth MLP Autoencoder + some edgy res connections'''

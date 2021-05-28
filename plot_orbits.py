@@ -35,7 +35,7 @@ def get_color(color):
     lv = len(hexcolor)
     return tuple(int(hexcolor[i:i + lv // 3], 16)/255. for i in range(0, lv, lv // 3)) # tuple of rgb values
 
-def fading_line(x, y, color='black', alpha=1, fading=True, fancy=False, tail=100, **kwargs):
+def fading_line(x, y, color='black', alpha=1, fading=True, fancy=False, tail=100, linestyle='solid', **kwargs):
     """
     Returns a matplotlib LineCollection connecting the points in the x and y lists.
     Can pass any kwargs you can pass to LineCollection, like linewidgth.
@@ -92,11 +92,11 @@ def fading_line(x, y, color='black', alpha=1, fading=True, fancy=False, tail=100
     segments[:,1,0] = x[1:]
     segments[:,1,1] = y[1:]
 
-    lc = LineCollection(segments, color=colors, **kwargs)
+    lc = LineCollection(segments, color=colors, linestyle=linestyle, **kwargs)
     return lc
 
 
-def multicolored_fading_lines(x, y, tail=100, ax=None):
+def multicolored_fading_lines(x, y, tail=100, ax=None, marker='o', s=plt.rcParams['lines.markersize']**2, alpha=1, label=None, linestyle=None):
     """
     http://nbviewer.ipython.org/github/dpsanders/matplotlib-examples/blob/master/colorline.ipynb
     http://matplotlib.org/examples/pylab_examples/multicolored_line.html
@@ -108,9 +108,9 @@ def multicolored_fading_lines(x, y, tail=100, ax=None):
     for i in range(x.shape[1]):
         rgba_color = plt.cm.jet(norm(i), bytes=False) 
         colors.append(rgba_color)
-        lc = fading_line(x[:,i], y[:,i], color=rgba_color, tail=tail)
+        lc = fading_line(x[:,i], y[:,i], color=rgba_color, tail=tail, linestyle=linestyle)
         ax.add_collection(lc)
-    ax.scatter(x[-1], y[-1], cmap=plt.cm.jet, norm=norm, c=colors)
+    ax.scatter(x[-1], y[-1], cmap=plt.cm.jet, norm=norm, c=colors, marker=marker, s=s, alpha=alpha, label=label)
     ax.set_xlim(x.min()*1.1, x.max()*1.1)
     ax.set_ylim(y.min()*1.1, y.max()*1.1)
     return ax 
@@ -119,7 +119,7 @@ def multicolored_fading_lines(x, y, tail=100, ax=None):
 if __name__ == '__main__':
     import h5py 
     with h5py.File('data_nih.h5', 'r') as h5f:
-        step_id = 1
+        step_id = 0
         ecc_hat = h5f['Step#%d/ecc' % step_id][()]
         semi_hat = h5f['Step#%d/a' % step_id][()]
         x_hat = h5f['Step#%d/x' % step_id][()]
@@ -127,17 +127,19 @@ if __name__ == '__main__':
         z_hat = h5f['Step#%d/z' % step_id][()]
 
     with h5py.File('data_nb.h5', 'r') as h5f:
-        step_id = 1
+        step_id = 0
         ecc = h5f['Step#%d/ecc' % step_id][()]
         semi = h5f['Step#%d/a' % step_id][()]
         x = h5f['Step#%d/x' % step_id][()]
         y = h5f['Step#%d/y' % step_id][()]
         z = h5f['Step#%d/z' % step_id][()]
     
-    for i in range(5, x_hat.shape[0]):
+    for i in range(1, x_hat.shape[0]):
         print('Step#%d' % i)
         fig, ax = plt.subplots(figsize=(10,10))
         plt.axis('equal')
-        ax = multicolored_fading_lines(x[:i], y[:i], ax=ax, tail=200)
+        ax = multicolored_fading_lines(x[:i], y[:i], ax=ax, tail=200, marker='s', s=2*plt.rcParams['lines.markersize']**2, alpha=0.5, linestyle='dashed', label='WH')
+        ax = multicolored_fading_lines(x_hat[:i], y_hat[:i], ax=ax, tail=200, label='WH-NIH', linestyle='solid')
+        plt.legend()
         plt.savefig(os.path.join('figures', 'step%05d.png' % i))
         plt.close()

@@ -1,70 +1,48 @@
-# Hamiltonian Neural Networks | 2019
-# Sam Greydanus, Misko Dzamba, Jason Yosinski
+
 
 import torch
 import numpy as np
 
 from nn_models import MLP
-from utils import rk4
 
 class HNN(torch.nn.Module):
     '''Learn arbitrary vector fields that are sums of conservative and solenoidal fields'''
-    def __init__(self, input_dim, differentiable_model, field_type='solenoidal',
-                    baseline=False, assume_canonical_coords=True):
+    def __init__(self, input_dim, differentiable_model, assume_canonical_coords=True, device='cpu'):
         super(HNN, self).__init__()
-        self.baseline = baseline
-        self.differentiable_model = differentiable_model
+        self.device = device
+        self.differentiable_model = differentiable_model.to(self.device)
         self.assume_canonical_coords = assume_canonical_coords
-        self.M = self.permutation_tensor(input_dim) # Levi-Civita permutation tensor
-
-        self.field_type = field_type
+        self.M = self.permutation_tensor(input_dim) 
 
     def forward(self, x):
-        # traditional forward pass
-        if self.baseline:
-            return self.differentiable_model(x) # output tensor: [batch_size, 8]
-
         y = self.differentiable_model(x) # call dnn prediction
-        assert y.dim() == 2 and y.shape[1] == 2, "Output tensor should have shape [batch_size, 2]"
-        return y.split(1,1)
+        assert y.dim() == 2 and y.shape[1] == 1, "Output tensor should have shape [batch_size, 1]"
+        return y
 
-    def rk4_time_derivative(self, x, dt):
-        return rk4(fun=self.time_derivative, y0=x, t=0, dt=dt)
 
     def time_derivative(self, x, t=None, separate_fields=False):
-        '''NEURAL ODE-STLE VECTOR FIELD'''
-        if self.baseline:
-            return self.differentiable_model(x)
 
-        '''NEURAL HAMILTONIAN-STLE VECTOR FIELD'''
-
-        # outputs two energy-like quantities. In fact, only F1 is used.
-        F1, F2 = self.forward(x) # traditional forward pass
+        # outputs an energy-like quantities. 
+        # x = x.to(self.device)
+        F = self.forward(x) # traditional forward pass
 
         conservative_field = torch.zeros_like(x) # start out with both components set to 0
         solenoidal_field = torch.zeros_like(x)
 
-        if self.field_type != 'solenoidal':
-            dF1 = torch.autograd.grad(F1.sum(), x, create_graph=True)[0] # gradients for conservative field
-            conservative_field = dF1 @ torch.eye(*self.M.shape)
+        dF = torch.autograd.grad(F.sum(), x, create_graph=True)[0] # gradients for conservative field
+        conservative_field = dF @ torch.eye(*self.M.shape, device=self.device)
 
-        if self.field_type != 'conservative':
-            dF2 = torch.autograd.grad(F2.sum(), x, create_graph=True)[0] # gradients for solenoidal field
-            solenoidal_field = dF2 @ self.M.t() # a @ b = a.matmal(b), t() is the transpose of the matrix
-
-        if separate_fields:
-            return [conservative_field, solenoidal_field]
         return conservative_field + solenoidal_field
 
     def permutation_tensor(self,n):
         M = None
         if self.assume_canonical_coords:
-            M = torch.eye(n).cuda()
-            M = torch.cat([M[n//2:], -M[:n//2]]).cuda()
+            M = torch.eye(n, device=self.device)
+            M = torch.cat([M[n//2:], -M[:n//2]])
         else:
             '''Constructs the Levi-Civita permutation tensor'''
-            M = torch.ones(n,n).cuda() # matrix of ones
-            M *= 1 - torch.eye(n).cuda() # clear diagonals
+            M = torch.ones(n,n, device=self.device) # matrix of ones
+            M *= 1 - torch.eye(n, device=self.device) # clear diagonals
             M[::2] *= -1 # pattern of signs
             M[:,::2] *= -1
     
@@ -74,27 +52,3 @@ class HNN(torch.nn.Module):
         return M
 
 
-class PixelHNN(torch.nn.Module):
-    def __init__(self, input_dim, hidden_dim, autoencoder,
-                 field_type='solenoidal', nonlinearity='tanh', baseline=False):
-        super(PixelHNN, self).__init__()
-        self.autoencoder = autoencoder
-        self.baseline = baseline
-
-        output_dim = input_dim if baseline else 2
-        nn_model = MLP(input_dim, hidden_dim, output_dim, nonlinearity)
-        self.hnn = HNN(input_dim, differentiable_model=nn_model, field_type=field_type, baseline=baseline)
-
-    def encode(self, x):
-        return self.autoencoder.encode(x)
-
-    def decode(self, z):
-        return self.autoencoder.decode(z)
-
-    def time_derivative(self, z, separate_fields=False):
-        return self.hnn.time_derivative(z, separate_fields)
-
-    def forward(self, x):
-        z = self.encode(x)
-        z_next = z + self.time_derivative(z)
-        return self.decode(z_next)
