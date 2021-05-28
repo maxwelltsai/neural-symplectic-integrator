@@ -47,6 +47,7 @@ def train(args):
     print("Training baseline model:" if args.baseline else "Training HNN model:")
 
   output_dim = args.input_dim  if args.baseline else 2
+  
   nn_model = MLP(args.input_dim, args.hidden_dim, output_dim, args.nonlinearity).cuda()
   model = HNN(args.input_dim, differentiable_model=nn_model,
             field_type=args.field_type, baseline=args.baseline).cuda()
