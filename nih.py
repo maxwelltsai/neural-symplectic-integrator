@@ -5,10 +5,12 @@ import numpy as np
 
 from nn_models import MLP
 
-class HNN(torch.nn.Module):
-    '''Learn arbitrary vector fields that are sums of conservative and solenoidal fields'''
+class NIH(torch.nn.Module):
+    """
+    Neural Interacting Hamiltonian (NIH) for the Wisdom-Holman integrator.
+    """
     def __init__(self, input_dim, differentiable_model, assume_canonical_coords=True, device='cpu'):
-        super(HNN, self).__init__()
+        super(NIH, self).__init__()
         self.device = device
         self.differentiable_model = differentiable_model.to(self.device)
         self.assume_canonical_coords = assume_canonical_coords

@@ -1,5 +1,5 @@
 from nn_models import MLP
-from nih import NIH
+from hnn import HNN
 import torch
 import sys
 from wh import WisdomHolman
@@ -11,15 +11,18 @@ from utils import get_model_path, get_backbone
 import h5py
 
 
+DPI = 300
+FORMAT = 'pdf'
 EXPERIMENT_DIR = '.'
 sys.path.append(EXPERIMENT_DIR)
 
 
 def load_model(config, device):
     output_dim = 1
+    # nn_model = MLP(config['input_dim'], config['hidden_dim'], config['output_dim'], config['activation'])
     nn_model = get_backbone(config['backbone'])
     print(nn_model)
-    model = NIH(config['input_dim'], differentiable_model=nn_model, device=device)
+    model = HNN(config['input_dim'], differentiable_model=nn_model, device=device)
 
     path = get_model_path()
     print(path)
@@ -35,15 +38,24 @@ hnn_model = load_model(config, device)
 
 # initial conditions
 semi = 5.20
-t_end = 100
-h = 0.05
+a0 = semi
+# a1 = semi + np.random.rand() + 1
+# a1 = semi * 1 + 5 * np.random.rand() + 1
+a1 = 9.5826
+t_end = 10
+h = 0.001
 
 wh_nih = WisdomHolman(hnn=hnn_model)
-wh_nih.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
-
-for i in range(10):
-    wh_nih.particles.add(mass=np.random.uniform(1.e-5, 1.e-8), a=np.random.uniform(1, 10), e=0.2*np.random.rand(), i=0, name='planet%d' % i, primary='Sun',f=2*np.pi*np.random.rand())
-
+me_ms = 3.e-6
+wh_nih.particles.add(mass=0.0898, pos=(0.0, 0.0, 0.0), vel=(0.0, 0.0, 0.0), name='star')
+wh_nih.particles.add(mass=1.374*me_ms, a=0.01154, e=0.00622, i=np.radians(89.56), name='b', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=1.308*me_ms, a=0.01580, e=0.01580, i=np.radians(89.70), name='c', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=0.388*me_ms, a=0.02227, e=0.00837, i=np.radians(89.89), name='d', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=0.692*me_ms, a=0.02925, e=0.00510, i=np.radians(89.736), name='e', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=1.039*me_ms, a=0.03849, e=0.01007, i=np.radians(89.719), name='f', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=1.321*me_ms, a=0.04683, e=0.00208, i=np.radians(89.721), name='g', primary='star',f=2*np.pi*np.random.rand())
+wh_nih.particles.add(mass=0.326*me_ms, a=0.06189, e=0.00567, i=np.radians(89.796), name='h', primary='star',f=2*np.pi*np.random.rand())
+   
 
 wh_nih.output_file = 'data_nih_%s_%s.h5' % (config['backbone'], config['activation'])
 wh_nih.store_dt = 10

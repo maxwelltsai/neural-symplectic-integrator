@@ -585,8 +585,8 @@ if __name__ == '__main__':
 
     m1 = np.linspace(1.e-2, 1.e-8, 1000)
     a1 = np.linspace(0.3, 100, 1000)
-    # a1 = [0.4, 0.7, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 400, 800]
     N_exp = 50
+    h = 0.05 # time step parameter 
 
     coords = None
     dcoords = None
@@ -594,17 +594,12 @@ if __name__ == '__main__':
         print('Trail #%d/%d (train)' % (trail+1, N_exp))
         wh = WisdomHolman()
         a0 = semi
-    #     a1 = semi + np.random.rand() + 1
-        # a1 = semi + 0.2 + 0.5 * np.random.rand()
         wh.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
         wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
         
-        # wh.particles.add(mass=1.e-4*np.random.rand(), a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-        # wh.particles.add(mass=1.e-4, a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-        # wh.particles.add(mass=1.e-5, a=a1, e=0.1*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
         print(wh.particles)
-        wh.h = 0.05
+        wh.h = h
         wh.acceleration_method = 'numpy'
         wh.integrate(500)
         if coords is None and dcoords is None:
@@ -622,14 +617,12 @@ if __name__ == '__main__':
     for trail, semi in enumerate(np.linspace(1,2,N_exp)):
         print('Trail #%d/%d (test)' % (trail, N_exp))
         wh = WisdomHolman()
-        a0 = semi
-    #     a1 = semi + np.random.rand() + 1
-        a1 = semi + 0.2 + 0.5 * np.random.rand()
         wh.particles.add(mass=1.0, pos=[0., 0., 0.,], vel=[0., 0., 0.,], name='Sun')
-        wh.particles.add(mass=1.e-0*np.random.rand(), a=a0, e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
-        # wh.particles.add(mass=1.e-5, a=a1, e=0.1*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
+        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet1', primary='Sun',f=2*np.pi*np.random.rand())
+        wh.particles.add(mass=np.random.choice(m1), a=np.random.choice(a1), e=0.05*np.random.rand(), i=np.pi/2*np.random.rand(), name='planet2', primary='Sun',f=2*np.pi*np.random.rand())
+
         print(wh.particles)
-        wh.h = 0.05
+        wh.h = h
         wh.acceleration_method = 'numpy'
         wh.integrate(200)
         if test_coords is None and test_dcoords is None:
@@ -640,19 +633,16 @@ if __name__ == '__main__':
             test_dcoords = np.append(test_dcoords, np.array(wh.dcoord), axis=0)
 
     data = {}
-    # data['coords'] = coords / (np.pi*2)
-    # data['dcoords'] = dcoords / (np.pi*2)
-    # data['test_coords'] = test_coords / (np.pi*2)
-    # data['test_dcoords'] = test_dcoords / (np.pi*2)
-
     data['coords'] = coords
     data['dcoords'] = dcoords
     data['test_coords'] = test_coords
     data['test_dcoords'] = test_dcoords
 
-    import pickle
-    def to_pickle(thing, path): # save something
-        with open(path, 'wb') as handle:
-            pickle.dump(thing, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    import h5py
+    from config import CONFIG
+    import os
 
-    to_pickle(data, 'wh-orbits-dataset.pkl')
+    with h5py.File(os.path.join(CONFIG['data_dir'], 'train_test.h5'), 'w') as h5f:
+        for dset in data.keys():
+            h5f.create_dataset(dset, data=data[dset], compression="gzip")
+    print('Training data generated.')
