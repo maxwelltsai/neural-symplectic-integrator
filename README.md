@@ -1,7 +1,7 @@
 # Neural Symplectic Integrator for Astrophysical *N*-body Simulations
 Wisdom-Holman integrator augmented with physics informed neural interacting Hamiltonian(NIH). The drift phase is done analytically with a Kepler solver, and the velicity kicks are done by a neural network. The nerual network replaces the function that numerically computes the interacting Hamiltonian.
 
-# Instellation
+# Installation
 The code in this repository requires the following packages: `abie`, `torch`, and `matplotlib`. They can be installed easily with the following command:
 
     pip install abie torch matplotlib 
@@ -15,7 +15,7 @@ To retrain the NIH, please generate the training data using
 
     python generate_training_data.py
 
-Modify the initial conditions in `generate_training_data.py` if desired. `Then perform the training
+Modify the initial conditions in `generate_training_data.py` if desired. Then perform the training
 
     python train.py
 

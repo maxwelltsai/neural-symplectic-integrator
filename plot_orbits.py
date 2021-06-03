@@ -3,8 +3,10 @@ matplotlib.use('Agg')
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.collections as mcoll
-import matplotlib
 import os 
+import argparse
+import h5py
+
 
 def get_color(color):
     """
@@ -117,8 +119,17 @@ def multicolored_fading_lines(x, y, tail=100, ax=None, marker='o', s=plt.rcParam
 
 
 if __name__ == '__main__':
-    import h5py 
-    with h5py.File('data_nih.h5', 'r') as h5f:
+    from config import CONFIG 
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--wh', type=str, dest='wh', default='data_nb.h5', help='Name of the output data file created by a traditional WH integrator')
+    parser.add_argument('--nih', type=str, dest='nih', default='data_nih_MLP_SymmetricLog.h5', help='Name of the output data file created by a traditional WH integrator')
+    parser.add_argument('-o', type=str, dest='mp4_fn', default='out.mp4', help='File name of the output movie')
+    parser.add_argument('-r', '--framerate', type=int, dest='framerate', default=20, help='Framerate per second')
+    parser.add_argument('-t', '--tail', type=int, dest='tail', default=200, help='Length of the tail')
+    args = parser.parse_args()
+
+    with h5py.File(args.nih, 'r') as h5f:
         step_id = 0
         ecc_hat = h5f['Step#%d/ecc' % step_id][()]
         semi_hat = h5f['Step#%d/a' % step_id][()]
@@ -126,20 +137,33 @@ if __name__ == '__main__':
         y_hat = h5f['Step#%d/y' % step_id][()]
         z_hat = h5f['Step#%d/z' % step_id][()]
 
-    with h5py.File('data_nb.h5', 'r') as h5f:
+    with h5py.File(args.wh, 'r') as h5f:
         step_id = 0
         ecc = h5f['Step#%d/ecc' % step_id][()]
         semi = h5f['Step#%d/a' % step_id][()]
         x = h5f['Step#%d/x' % step_id][()]
         y = h5f['Step#%d/y' % step_id][()]
         z = h5f['Step#%d/z' % step_id][()]
+        t = h5f['Step#%d/time' % step_id][()]
     
     for i in range(1, x_hat.shape[0]):
         print('Step#%d' % i)
         fig, ax = plt.subplots(figsize=(10,10))
         plt.axis('equal')
-        ax = multicolored_fading_lines(x[:i], y[:i], ax=ax, tail=200, marker='s', s=2*plt.rcParams['lines.markersize']**2, alpha=0.5, linestyle='dashed', label='WH')
-        ax = multicolored_fading_lines(x_hat[:i], y_hat[:i], ax=ax, tail=200, label='WH-NIH', linestyle='solid')
+        lim_low = max(0, i-args.tail)
+        ax = multicolored_fading_lines(x[lim_low:i], y[lim_low:i], ax=ax, tail=args.tail, marker='s', s=2*plt.rcParams['lines.markersize']**2, alpha=0.5, linestyle='dashed', label='WH')
+        ax = multicolored_fading_lines(x_hat[lim_low:i], y_hat[lim_low:i], ax=ax, tail=args.tail, label='WH-NIH', linestyle='solid')
+
+        # plot the difference
+        for j in range(x.shape[1]):
+            plt.annotate(text='', xy=(x[i,j], y[i,j]), xytext=(x_hat[i,j], y_hat[i,j]), arrowprops=dict(arrowstyle='<->'), alpha=0.7)
+
+        plt.title('Step#%d, $t = $%f yrs' % (i, t[i]))
         plt.legend()
-        plt.savefig(os.path.join('figures', 'step%05d.png' % i))
+        plt.savefig(os.path.join(CONFIG['fig_dir'], 'step%05d.png' % i))
         plt.close()
+
+    # Combine the frames into a movie
+    cmd = 'ffmpeg -y -framerate {} -start_number 1 -i {}/step%05d.png -c:v libx264 -r 20 -pix_fmt yuv420p {}'.format(args.framerate, CONFIG['fig_dir'], args.mp4_fn)
+    print('Creating movie with the following command: %s' % cmd)
+    os.system(cmd)
