@@ -126,6 +126,8 @@ if __name__ == '__main__':
     parser.add_argument('--nih', type=str, dest='nih', default='data_nih_MLP_SymmetricLog.h5', help='Name of the output data file created by a traditional WH integrator')
     parser.add_argument('-o', type=str, dest='mp4_fn', default='out.mp4', help='File name of the output movie')
     parser.add_argument('-r', '--framerate', type=int, dest='framerate', default=20, help='Framerate per second')
+    parser.add_argument('-x', type=str, dest='x', default='x', help='The name of the x-axis to plot')
+    parser.add_argument('-y', type=str, dest='y', default='y', help='The name of the y-axis to plot')
     parser.add_argument('-t', '--tail', type=int, dest='tail', default=200, help='Length of the tail')
     args = parser.parse_args()
 
@@ -133,20 +135,21 @@ if __name__ == '__main__':
         step_id = 0
         ecc_hat = h5f['Step#%d/ecc' % step_id][()]
         semi_hat = h5f['Step#%d/a' % step_id][()]
-        x_hat = h5f['Step#%d/x' % step_id][()]
-        y_hat = h5f['Step#%d/y' % step_id][()]
-        z_hat = h5f['Step#%d/z' % step_id][()]
+        x_hat = h5f['Step#%d/%s' % (step_id, args.x)][()]
+        y_hat = h5f['Step#%d/%s' % (step_id, args.y)][()]
 
     with h5py.File(args.wh, 'r') as h5f:
         step_id = 0
         ecc = h5f['Step#%d/ecc' % step_id][()]
         semi = h5f['Step#%d/a' % step_id][()]
-        x = h5f['Step#%d/x' % step_id][()]
-        y = h5f['Step#%d/y' % step_id][()]
-        z = h5f['Step#%d/z' % step_id][()]
+        x = h5f['Step#%d/%s' % (step_id, args.x)][()]
+        y = h5f['Step#%d/%s' % (step_id, args.y)][()]
         t = h5f['Step#%d/time' % step_id][()]
-    
-    for i in range(1, x_hat.shape[0]):
+
+    if not os.path.isdir(CONFIG['fig_dir']):
+        os.mkdir(CONFIG['fig_dir'])
+
+    for i in range(1, min(x.shape[0], x_hat.shape[0])):
         print('Step#%d' % i)
         fig, ax = plt.subplots(figsize=(10,10))
         plt.axis('equal')
