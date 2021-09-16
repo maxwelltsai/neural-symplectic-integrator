@@ -44,7 +44,7 @@ def train(config):
     for step in range(config['total_steps']+1):
 
         # train step
-        ixs = torch.randperm(x.shape[0])[:config['batch_size']]
+        ixs = torch.randperm(x.shape[0], device=device)[:config['batch_size']]
         dxdt_hat = model.time_derivative(x[ixs])
         loss = custom_loss(dxdt[ixs], dxdt_hat, x[ixs])
         loss.backward()
@@ -52,7 +52,7 @@ def train(config):
         optim.step() ; optim.zero_grad()
 
         # run test data
-        test_ixs = torch.randperm(test_x.shape[0])[:config['batch_size']]
+        test_ixs = torch.randperm(test_x.shape[0], device=device)[:config['batch_size']]
         test_dxdt_hat = model.time_derivative(test_x[test_ixs])
         test_loss = custom_loss(test_dxdt[test_ixs], test_dxdt_hat, test_x[test_ixs])
 
