@@ -46,3 +46,8 @@ We would like to stress that the neural network integrator is not optimally trai
 The directory `./movies` contains a few movies made from the Jupyter notebook experiments. In each movie, the squares are ground truth data from a traditional Wisdom-Holman integrator (legend: WH), whose trajectores are marked with dashed curves. The dots (legend: WH-NIH) are prediction data from the neural N-body integrator, whose trajectories are marked with solid curve. The black double-head arrows connect the corresponding square-dot pair in the same color, so one can know how different are the data from the neural network versus from the ground truth.
 
 Ideally, the squares should always overlap with the dots, which means that the NN prediction is correct for every time step. This is of course not the case. As the system evolves, one can see that the arrows are getting longer, which means that the differences are growing. However, as long as they the square-dot pair are moving in the same orbit, the physics is correct.
+
+# Publication
+A paper related to this project has been accepted by the NeurIPS 2021 workshop "Machine Learning and the Physical Sciences". The link to the paper will be updated here soon.
+
+
