@@ -47,6 +47,9 @@ The directory `./movies` contains a few movies made from the Jupyter notebook ex
 
 Ideally, the squares should always overlap with the dots, which means that the NN prediction is correct for every time step. This is of course not the case. As the system evolves, one can see that the arrows are getting longer, which means that the differences are growing. However, as long as they the square-dot pair are moving in the same orbit, the physics is correct.
 
+# Disclaimer
+This project is still highly experimental, and many things can break down. It is not a drop-in replacement for a traditoinal N-body integrator. Comments/contributions are welcome!
+
 # Publication
 A paper related to this project has been accepted by the NeurIPS 2021 workshop "Machine Learning and the Physical Sciences". The link to the paper will be updated here soon.
 
