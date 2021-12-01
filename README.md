@@ -51,6 +51,6 @@ Ideally, the squares should always overlap with the dots, which means that the N
 This project is still highly experimental, and many things can break down. It is not a drop-in replacement for a traditoinal N-body integrator. Comments/contributions are welcome!
 
 # Publication
-A paper related to this project has been accepted by the NeurIPS 2021 workshop "Machine Learning and the Physical Sciences". The link to the paper will be updated here soon.
+Cai, Maxwell X. ; Portegies Zwart, Simon ; Podareanu, Damian: "Neural Symplectic Integrator with Hamiltonian Inductive Bias for the Gravitational N-body Problem",  accepted by the NeurIPS 2021 workshop "Machine Learning and the Physical Sciences". https://arxiv.org/abs/2111.15631
 
 
