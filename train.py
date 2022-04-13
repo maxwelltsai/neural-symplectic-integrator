@@ -36,8 +36,8 @@ def train(config):
     data = get_dataset(config['name'], config['data_dir'], verbose=True)
     x = torch.tensor(data['coords'].reshape(data['coords'].shape[0]*data['coords'].shape[1],6), requires_grad=True, dtype=torch.float32, device=device)
     test_x = torch.tensor(data['test_coords'].reshape(data['test_coords'].shape[0]*data['test_coords'].shape[1],6), requires_grad=True, dtype=torch.float32, device=device)
-    dxdt = torch.Tensor(data['dcoords'].reshape(data['dcoords'].shape[0]*data['dcoords'].shape[1],6)).cuda()
-    test_dxdt = torch.Tensor(data['test_dcoords'].reshape(data['test_dcoords'].shape[0]*data['test_dcoords'].shape[1],6)).cuda()
+    dxdt = torch.Tensor(data['dcoords'].reshape(data['dcoords'].shape[0]*data['dcoords'].shape[1],6), device=device)
+    test_dxdt = torch.Tensor(data['test_dcoords'].reshape(data['test_dcoords'].shape[0]*data['test_dcoords'].shape[1],6), device=device)
 
     # vanilla train loop
     stats = {'train_loss': [], 'test_loss': []}

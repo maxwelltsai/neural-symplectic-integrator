@@ -10,6 +10,10 @@ import copy
 
 __integrator__ = 'WisdomHolman'
 
+if torch.cuda.is_available():
+    device = 'cuda'
+else:
+    device = 'cpu'
 
 class WisdomHolman(Integrator):
     """
@@ -289,7 +293,7 @@ class WisdomHolman(Integrator):
 #             print('acc truth', WisdomHolman.compute_accel(helio, jacobi, masses, nbodies, G))
 #             print('vel hnn pred', hnn.time_derivative(helio_tensor)[0, :3*nbodies])
 #             print('vel truth', helio[3*nbodies:])
-            jacobi_tensor = torch.tensor(np.append(q, p, axis=1), requires_grad=True, dtype=torch.float32).cuda()
+            jacobi_tensor = torch.tensor(np.append(q, p, axis=1), requires_grad=True, dtype=torch.float32, device=device)
             # jacobi_tensor = jacobi_tensor.view(1, np.size(jacobi)) # batch size of 1
             # accel = self.hnn.time_derivative(jacobi_tensor)[0,3*nbodies:].detach().cpu().numpy()
             accel = self.hnn.time_derivative(jacobi_tensor)[:, 3:].detach().cpu().numpy().flatten()
